@@ -88,6 +88,20 @@ def ident_cat_dog(message):
     bot.send_message(message.chat.id, answer)
 
 
+def number_identification(photo):
+    np.set_printoptions(suppress=True)
+    model = load_model("mnist_model.h5", compile=False)
+    image = Image.open(photo).convert("L")
+    image = ImageOps.invert(image)
+    size = (28, 28)
+    image = ImageOps.fit(image, size, method=Image.Resampling.LANCZOS)
+    image_array = np.asarray(image).astype(np.float32) / 255.0
+    image_array = image_array.reshape(1, 28, 28, 1)
+    prediction = model.predict(image_array)
+    index = np.argmax(prediction)
+
+    return str(index)
+
 def load_photo(message, name):
     photo = message.photo[-1]
     file_info = bot.get_file(photo.file_id)
