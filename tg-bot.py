@@ -16,7 +16,7 @@ from flask import Flask, request
 TOKEN = os.getenv("BOT_TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
-app = Flask(name)
+app = Flask(__name__)
 
 @app.route('/')
 def index():
