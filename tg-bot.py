@@ -235,7 +235,7 @@ def answer(call):
 
 
 if __name__ == "__main__":
-    server_url = os.getenv("SERVER_URL")
+    server_url = os.getenv("RENDER_EXTERNAL_URL")
     if server_url and TOKEN:
         webhook_url = f"{server_url}/{TOKEN}"
         set_webhook_url = f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}"
@@ -244,7 +244,10 @@ if __name__ == "__main__":
             print("Webhook установлен:", r.text)
         except Exception as e:
             print("Ошибка при установке webhook:", e)
-        app.run(host='0.0.0.0', port=8080)
+
+        port = int(os.environ.get("PORT", 10000))
+        print(f"Starting server on port {port}")
+        app.run(host='0.0.0.0', port=port)
     else:
         print("Запуск бота в режиме pooling")
         bot.remove_webhook()
