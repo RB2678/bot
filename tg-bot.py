@@ -244,7 +244,7 @@ if __name__ == "__main__":
             print("Webhook установлен:", r.text)
         except Exception as e:
             print("Ошибка при установке webhook:", e)
-        app.run(host='0.0.0.0', port=10000)
+        app.run(host='0.0.0.0', port=8080)
     else:
         print("Запуск бота в режиме pooling")
         bot.remove_webhook()
