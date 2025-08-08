@@ -122,7 +122,7 @@ def start(message):
         button6 = telebot.types.KeyboardButton(text="Распознавание цифр")
         button7 = telebot.types.KeyboardButton(text="Распознавание животных")
         keyboard.add(button6, button7)
-        bot.send_message(message.chat.id, "Привет, меня зовут Бот", reply_markup=keyboard)
+        bot.send_message(message.chat.id, "Привет, я бот с интегрированными нейросетевыми моделями. В мой функционал входят: общение с моделью DeepSeek-R1, а также распознование рукописных цифр и кошек/собак на изображениях при помощи нейросети", reply_markup=keyboard)
     except Exception as e:
         bot.reply_to(message, f"Ошибка: {e}")
 
