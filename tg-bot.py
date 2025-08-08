@@ -188,8 +188,10 @@ def handle_text(message):
             send2 = bot.send_message(message.chat.id, "Загрузите изображение кошки или собаки")
             bot.register_next_step_handler(send2, ident_cat_dog)
         else:
+            print("Думаю над ответом...")
             answer = chat(message.text)
             bot.send_message(message.chat.id, answer)
+            bot.delete_message(message.chat.id, message.id+1)
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка: {e}")
 
