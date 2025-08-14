@@ -14,7 +14,7 @@ from PIL import Image, ImageOps
 from flask import Flask, request
 
 TOKEN = os.getenv("BOT_TOKEN")
-bot = telebot.TeleBot(TOKEN)
+bot = telebot.TeleBot(TOKEN, parse_mode=None)
 
 app = Flask(__name__)
 
