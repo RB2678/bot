@@ -19,7 +19,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 if not TOKEN:
     sys.exit("Ошибка: BOT_TOKEN не задан в переменных окружения")
 
-bot = telebot.TeleBot(TOKEN, parse_mode=None)
+bot = telebot.TeleBot(TOKEN, parse_mode="MarkdownV2")
 app = Flask(__name__)
 
 MAX_LEN = 4096
@@ -263,11 +263,6 @@ def handle_text(message):
                     bot.delete_message(message.chat.id, msg.message_id)
                 except Exception:
                     pass
-
-            bot.send_message(message.chat.id, "Думаю над ответом...")
-            answer = chat(message.chat.id, message.text)
-            send_long_message(message.chat.id, answer, parse_mode="MarkdownV2")
-            bot.delete_message(message.chat.id, message.id+1)
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка: {e}")
 
