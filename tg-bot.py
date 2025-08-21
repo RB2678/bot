@@ -12,6 +12,7 @@ import numpy as np
 from tensorflow.keras.models import load_model
 from PIL import Image, ImageOps
 from flask import Flask, request
+import re
 
 TOKEN = os.getenv("BOT_TOKEN")
 bot = telebot.TeleBot(TOKEN, parse_mode=None)
@@ -29,6 +30,16 @@ def webhook():
     bot.process_new_updates([update])
     return '', 200
 
+def escape_markdown(text: str) -> str:
+    escape_chars = r'[_*[\]()~`>#+\-=|{}.!]'
+    return re.sub(f'({escape_chars})', r'\\\1', text)
+
+MAX_LEN = 4096
+
+def send_long_message(chat_id, text, parse_mode="MarkdownV2"):
+    safe_text = escape_markdown(text)
+    for i in range(0, len(safe_text), MAX_LEN):
+        bot.send_message(chat_id, safe_text[i:i+MAX_LEN], parse_mode=parse_mode)
 
 def load_photo(message, name):
     photo = message.photo[-1]
@@ -211,7 +222,8 @@ def handle_text(message):
         else:
             bot.send_message(message.chat.id, "Думаю над ответом...")
             answer = chat(message.chat.id, message.text)
-            bot.send_message(message.chat.id, answer, parse_mode='Markdown')
+            send_long_message(message.chat.id, answer, parse_mode="MarkdownV2")
+            #bot.send_message(message.chat.id, answer, parse_mode='Markdown')
             bot.delete_message(message.chat.id, message.id+1)
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка: {e}")
