@@ -1,25 +1,37 @@
-# ИМПОРТ БИБЛИОТЕК
-import telebot
-from random import randint
-from datetime import datetime
-import time
-import random
-import telebot
-import requests
 import os
+import sys
+import re
+import json
+import logging
+import requests
 import gdown
 import numpy as np
-from tensorflow.keras.models import load_model
-from PIL import Image, ImageOps
+from random import randint
+from datetime import datetime
 from flask import Flask, request
-import re
-import logging
+from PIL import Image, ImageOps
+import telebot
+from tensorflow.keras.models import load_model
 
 logging.basicConfig(level=logging.INFO)
-TOKEN = os.getenv("BOT_TOKEN")
-bot = telebot.TeleBot(TOKEN, parse_mode=None)
 
+TOKEN = os.getenv("BOT_TOKEN")
+if not TOKEN:
+    sys.exit("Ошибка: BOT_TOKEN не задан в переменных окружения")
+
+bot = telebot.TeleBot(TOKEN, parse_mode=None)
 app = Flask(__name__)
+
+MAX_LEN = 4096
+
+def escape_markdown(text: str) -> str:
+    escape_chars = r'[_*[\]()~`>#+\-=|{}.!]'
+    return re.sub(f'({escape_chars})', r'\\\1', text)
+
+def send_long_message(chat_id, text, parse_mode="MarkdownV2"):
+    safe_text = escape_markdown(text or "")
+    for i in range(0, len(safe_text), MAX_LEN):
+        bot.send_message(chat_id, safe_text[i:i+MAX_LEN], parse_mode=parse_mode)
 
 @app.route('/')
 def index():
@@ -31,22 +43,6 @@ def webhook():
     update = telebot.types.Update.de_json(json_str)
     bot.process_new_updates([update])
     return '', 200
-
-def echo(update, context):
-    user_message = update.message.text
-    print("Пользователь написал: ", user_message)
-    
-
-def escape_markdown(text: str) -> str:
-    escape_chars = r'[_*[\]()~`>#+\-=|{}.!]'
-    return re.sub(f'({escape_chars})', r'\\\1', text)
-
-MAX_LEN = 4096
-
-def send_long_message(chat_id, text, parse_mode="MarkdownV2"):
-    safe_text = escape_markdown(text)
-    for i in range(0, len(safe_text), MAX_LEN):
-        bot.send_message(chat_id, safe_text[i:i+MAX_LEN], parse_mode=parse_mode)
 
 def load_photo(message, name):
     photo = message.photo[-1]
@@ -71,7 +67,7 @@ def save_history():
         with open(history_file, "w", encoding='utf-8') as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        print("Ошибка сохранения истории: ", e)
+        logging.error("Ошибка сохранения истории: %s", e)
         
 def chat(user_id, text):
     try:
@@ -115,28 +111,32 @@ def chat(user_id, text):
     except Exception as e:
         return f"Ошибка при запросе: {e}"
 
+MODEL_PATH = "cat_dog_model.h5"
+CATS_URL = os.getenv("CAT_DOGS_MODEL_URL")
+model = None
+
+def ensure_model():
+    global model
+    if model is None:
+        if not os.path.exists(MODEL_PATH) and CATS_URL:
+            gdown.download(CATS_URL, MODEL_PATH, quiet=False)
+        model = load_model(MODEL_PATH, compile=False)
+    return model
+
 def cat_dog(photo):
     try:
-        np.set_printoptions(suppress=True)
-        model_path = "cat_dog_model.h5"
-        if not os.path.exists(model_path):
-            url = os.getenv("CAT_DOGS_MODEL_URL")
-            gdown.download(url, model_path, quiet=False)
-        model = load_model(model_path, compile=False)
-        image = Image.open(photo).convert("RGB")
-        size = (150, 150)
-        image = ImageOps.fit(image, size, method=Image.Resampling.LANCZOS)
-        image_array = np.asarray(image).astype(np.float32) / 255.0
-        image_array = np.expand_dims(image_array, axis=0)
-        prediction = model.predict(image_array)
-        confidence = float(prediction[0])
-        if confidence < 0.5:
-            return f"На изображении кот (точность: {confidence:.2f})"
+        model = ensure_model()
+        img = Image.open(photo).convert("RGB")
+        img = ImageOps.fit(img, (150, 150), Image.Resampling.LANCZOS)
+        x = np.expand_dims(np.array(img) / 255.0, axis=0)
+        pred = model.predict(x, verbose=0)
+        confidence = pred[0][0]
+        if confidence > 0.5:
+            return f"На изображении собака 🐶 (точность: {confidence:.2f})"
         else:
-            return f"На изображении собака (точность: {confidence:.2f})"
+            return f"На изображении кот 🐱 (точность: {1-confidence:.2f})"
     except Exception as e:
         return f"Ошибка при распознавании: {e}"
-
 
 def ident_number(message):
     load_photo(message, "Number.jpg")
@@ -252,20 +252,16 @@ def answer(call):
 
 
 if __name__ == "__main__":
-    server_url = os.getenv("RENDER_EXTERNAL_URL")
-    if server_url and TOKEN:
-        webhook_url = f"{server_url}/{TOKEN}"
-        set_webhook_url = f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}"
+    SERVER_URL = os.getenv("RENDER_EXTERNAL_URL")
+    if SERVER_URL:
+        webhook_url = f"{SERVER_URL.rstrip('/')}/{TOKEN}"
         try:
-            r = requests.get(set_webhook_url)
-            print("Webhook установлен:", r.text)
+            r = requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}", timeout=10)
+            logging.info("Webhook установлен: %s", r.text)
         except Exception as e:
-            print("Ошибка при установке webhook:", e)
-
-        port = int(os.environ.get("PORT", 10000))
-        print(f"Starting server on port {port}")
-        app.run(host='0.0.0.0', port=port)
+            logging.error("Ошибка при установке webhook", exc_info=e)
+        app.run(host='0.0.0.0', port=int(os.getenv("PORT", 10000)))
     else:
-        print("Запуск бота в режиме pooling")
+        logging.info("Запуск бота в режиме polling")
         bot.remove_webhook()
-        bot.polling(none_stop=True)
+        bot.infinity_polling(timeout=60)
