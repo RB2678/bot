@@ -226,7 +226,7 @@ def handle_text(message):
         else:
             bot.send_message(message.chat.id, "Думаю над ответом...")
             answer = chat(message.chat.id, message.text)
-            bot.send_message(message.chat.id, answer)
+            bot.send_message(message.chat.id, answer, parse_mode='Markdown')
             bot.delete_message(message.chat.id, message.id+1)
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка: {e}")
