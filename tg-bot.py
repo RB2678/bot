@@ -13,7 +13,9 @@ from tensorflow.keras.models import load_model
 from PIL import Image, ImageOps
 from flask import Flask, request
 import re
+import logging
 
+logging.basicConfig(level=logging.INFO)
 TOKEN = os.getenv("BOT_TOKEN")
 bot = telebot.TeleBot(TOKEN, parse_mode=None)
 
@@ -201,14 +203,9 @@ user_messages = {}
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text(message):
     try:
-        user_id = message.chat.id
+        logging.info(f"Сообщение от {message.from_user.id}: {message.text}")
         text = message.text
 
-        if user_id not in user_messages:
-            user_messages[user_id] = []
-
-        user_messages[user_id].append(text)
-        print(f"Новое сообщение от {user_id}: {text}")
         if text == "Игра в кубик":
             keyboard2 = telebot.types.InlineKeyboardMarkup(row_width=3)
             button1 = telebot.types.InlineKeyboardButton("1", callback_data='1')
