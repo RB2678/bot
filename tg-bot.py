@@ -29,8 +29,44 @@ def webhook():
     bot.process_new_updates([update])
     return '', 200
 
-def chat(text):
+
+def load_photo(message, name):
+    photo = message.photo[-1]
+    file_info = bot.get_file(photo.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    save_path = name
+    with open(save_path, 'wb') as new_file:
+        new_file.write(downloaded_file)
+
+history_file = "history.json"
+history = {}
+
+if os.path.exists(history_file):
     try:
+        with open(history_file, "r", encoding='utf-8') as f:
+            history = json.load(f)
+    except Exception:
+        history = {}
+
+def save_history():
+    try:
+        with open(history_file, "w", encoding='utf-8') as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print("Ошибка сохранения истории: ", e)
+        
+def chat(user_id, text):
+    try:
+        if str(user_id) not in history:
+            history[str(user_id)] = [
+                {"role": "system", "content": "Ты — дружелюбный помощник."}
+            ]
+
+        history[str(user_id)].append({"role": "user", "content": text})
+
+        if len(history[str(user_id)]) > 16:
+            history[str(user_id)] = [history[str(user_id)][0]] + history[str(user_id)][-15:]
+
         url = "https://api.intelligence.io.solutions/api/v1/chat/completions"
         headers = {
             "Content-Type": "application/json",
@@ -38,16 +74,23 @@ def chat(text):
         }
         data = {
             "model": "deepseek-ai/DeepSeek-R1-0528",
-            "messages": [
-                {"role": "system", "content": text}
-            ]
+            "messages": history[str(user_id)]
         }
+
         response = requests.post(url, headers=headers, json=data)
         data = response.json()
+
         if 'choices' in data and data['choices']:
             content = data['choices'][0]['message']['content']
-            if '</think>' in content:
-                return content.split('</think>', 1)[1]
+            history[str(user_id)].append({"role": "assistant", "content": content})
+
+            if len(history[str(user_id)]) > 16:
+                history[str(user_id)] = [history[str(user_id)][0]] + history[str(user_id)][-15:]
+
+            save_history()
+
+            if '</think>\n\n' in content:
+                return content.split('</think>\n\n', 1)[1]
             return content
         else:
             return f"Ошибка API: {data}"
@@ -102,13 +145,6 @@ def number_identification(photo):
 
     return str(index)
 
-def load_photo(message, name):
-    photo = message.photo[-1]
-    file_info = bot.get_file(photo.file_id)
-    downloaded_file = bot.download_file(file_info.file_path)
-    save_path = name
-    with open(save_path, 'wb') as new_file:
-        new_file.write(downloaded_file)
 
 @bot.message_handler(commands=['start'])
 def start(message):
