@@ -225,7 +225,7 @@ def handle_text(message):
             bot.register_next_step_handler(send2, ident_cat_dog)
         else:
             bot.send_message(message.chat.id, "Думаю над ответом...")
-            answer = chat(message.text)
+            answer = chat(message.chat.id, message.text)
             bot.send_message(message.chat.id, answer)
             bot.delete_message(message.chat.id, message.id+1)
     except Exception as e:
