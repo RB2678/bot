@@ -89,8 +89,8 @@ def chat(user_id, text):
 
             save_history()
 
-            if '</think>\n\n' in content:
-                return content.split('</think>\n\n', 1)[1]
+            if '</think>' in content:
+                return content.split('</think>', 1)[1]
             return content
         else:
             return f"Ошибка API: {data}"
