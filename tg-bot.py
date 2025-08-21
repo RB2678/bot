@@ -30,10 +30,13 @@ def escape_markdown(text: str) -> str:
     return re.sub(f'({escape_chars})', r'\\\1', text)
 
 def send_long_message(chat_id, text, parse_mode="MarkdownV2"):
-    safe_text = text
-    safe_text = escape_markdown(text or "")
-    for i in range(0, len(safe_text), MAX_LEN):
-        bot.send_message(chat_id, safe_text[i:i+MAX_LEN], parse_mode=parse_mode)
+    try:
+        safe_text = text
+        safe_text = escape_markdown(text or "")
+        for i in range(0, len(safe_text), MAX_LEN):
+            bot.send_message(chat_id, safe_text[i:i+MAX_LEN], parse_mode=parse_mode)
+    except Exception as e:
+        logging.error(f"Ошибка: {e}")
 
 @app.route('/')
 def index():
@@ -117,9 +120,9 @@ def chat(user_id, text):
                 return content.split('</think>', 1)[1]
             return content
         else:
-            return f"Ошибка API: {json.dumps(data, ensure_ascii=False)}"
+            logging.error(f"Ошибка API: {json.dumps(data, ensure_ascii=False)}")
     except Exception as e:
-        return f"Ошибка при запросе: {e}"
+        logging.error(f"Ошибка при запросе: {e}")
 
 TFLITE_PATH = "cat_dog_model.tflite"
 TFLITE_URL = os.getenv("CAT_DOGS_TFLITE_URL")
