@@ -30,6 +30,11 @@ def webhook():
     bot.process_new_updates([update])
     return '', 200
 
+def echo(update, context):
+    user_message = update.message.text
+    print("Пользователь написал: ", user_message)
+    
+
 def escape_markdown(text: str) -> str:
     escape_chars = r'[_*[\]()~`>#+\-=|{}.!]'
     return re.sub(f'({escape_chars})', r'\\\1', text)
@@ -191,10 +196,19 @@ def handle_photo(message):
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка обработки фото: {e}")
 
-@bot.message_handler(content_types=['text'])
+user_messages = {}
+
+@bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text(message):
     try:
+        user_id = message.chat.id
         text = message.text
+
+        if user_id not in user_messages:
+            user_messages[user_id] = []
+
+        user_messages[user_id].append(text)
+        print(f"Новое сообщение от {user_id}: {text})
         if text == "Игра в кубик":
             keyboard2 = telebot.types.InlineKeyboardMarkup(row_width=3)
             button1 = telebot.types.InlineKeyboardButton("1", callback_data='1')
