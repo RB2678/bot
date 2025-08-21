@@ -12,6 +12,7 @@ from flask import Flask, request
 from PIL import Image, ImageOps
 import telebot
 from tensorflow.keras.models import load_model
+import tensorflow as tf
 
 logging.basicConfig(level=logging.INFO)
 
