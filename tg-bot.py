@@ -39,9 +39,13 @@ def index():
 
 @app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
-    json_str = request.get_data().decode('UTF-8')
-    update = telebot.types.Update.de_json(json_str)
-    bot.process_new_updates([update])
+    try:
+        json_str = request.get_data(as_text=True)
+        update = telebot.types.Update.de_json(json_str)
+        if update:
+            bot.process_new_updates([update])
+    except Exception as e:
+        app.logger.exception("Webhook error: %s", e)
     return '', 200
 
 def load_photo(message, name):
@@ -68,7 +72,11 @@ def save_history():
             json.dump(history, f, ensure_ascii=False, indent=2)
     except Exception as e:
         logging.error("Ошибка сохранения истории: %s", e)
-        
+
+API_KEY = os.getenv('API_KEY')
+if not API_KEY:
+    logging.warning("API_KEY не задан: чат-модель будет недоступна")
+    
 def chat(user_id, text):
     try:
         if str(user_id) not in history:
@@ -84,17 +92,17 @@ def chat(user_id, text):
         url = "https://api.intelligence.io.solutions/api/v1/chat/completions"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {os.getenv('API_KEY')}"
+            "Authorization": f"Bearer {API_KEY}" if API_KEY else ""
         }
         data = {
             "model": "deepseek-ai/DeepSeek-R1-0528",
             "messages": history[str(user_id)]
         }
 
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data, timeout=60)
         data = response.json()
 
-        if 'choices' in data and data['choices']:
+        if isinstance(data, dict) and data.get('choices'):
             content = data['choices'][0]['message']['content']
             history[str(user_id)].append({"role": "assistant", "content": content})
 
@@ -107,34 +115,42 @@ def chat(user_id, text):
                 return content.split('</think>', 1)[1]
             return content
         else:
-            return f"Ошибка API: {data}"
+            return f"Ошибка API: {json.dumps(data, ensure_ascii=False)}"
     except Exception as e:
         return f"Ошибка при запросе: {e}"
 
 MODEL_PATH = "cat_dog_model.h5"
-CATS_URL = os.getenv("CAT_DOGS_MODEL_URL")
-model = None
+MODEL_URL = os.getenv("CAT_DOGS_MODEL_URL")
+_catdog_model = None
 
-def ensure_model():
-    global model
-    if model is None:
-        if not os.path.exists(MODEL_PATH) and CATS_URL:
-            gdown.download(CATS_URL, MODEL_PATH, quiet=False)
-        model = load_model(MODEL_PATH, compile=False)
-    return model
+def ensure_catdog_model():
+    global _catdog_model
+    if _catdog_model is None:
+        if not os.path.exists(MODEL_PATH):
+            if not MODEL_URL:
+                raise RuntimeError("CAT_DOGS_MODEL_URL не задан, а локальной модели нет")
+            gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+        _catdog_model = load_model(MODEL_PATH, compile=False)
+    return _catdog_model
 
 def cat_dog(photo):
     try:
-        model = ensure_model()
-        img = Image.open(photo).convert("RGB")
-        img = ImageOps.fit(img, (150, 150), Image.Resampling.LANCZOS)
-        x = np.expand_dims(np.array(img) / 255.0, axis=0)
+        model = ensure_catdog_model()
+        image = Image.open(photo).convert("RGB")
+        image = ImageOps.fit(image, (150, 150), method=Image.Resampling.LANCZOS)
+        x = (np.asarray(image).astype(np.float32) / 255.0)[None, ...]
         pred = model.predict(x, verbose=0)
-        confidence = pred[0][0]
-        if confidence > 0.5:
-            return f"На изображении собака 🐶 (точность: {confidence:.2f})"
+        
+        if pred.ndim == 2 and pred.shape[1] == 1:
+            confidence = float(pred[0][0])
+        elif pred.ndim == 1:
+            confidence = float(pred[0])
         else:
-            return f"На изображении кот 🐱 (точность: {1-confidence:.2f})"
+            confidence = float(np.ravel(pred)[0])
+
+        return (f"На изображении собака (точность: {confidence:.2f})"
+                if confidence >= 0.5 else
+                f"На изображении кот (точность: {1-confidence:.2f})")
     except Exception as e:
         return f"Ошибка при распознавании: {e}"
 
@@ -149,19 +165,28 @@ def ident_cat_dog(message):
     bot.send_message(message.chat.id, answer)
 
 
-def number_identification(photo):
-    np.set_printoptions(suppress=True)
-    model = load_model("mnist_model.h5", compile=False)
-    image = Image.open(photo).convert("L")
-    image = ImageOps.invert(image)
-    size = (28, 28)
-    image = ImageOps.fit(image, size, method=Image.Resampling.LANCZOS)
-    image_array = np.asarray(image).astype(np.float32) / 255.0
-    image_array = image_array.reshape(1, 28, 28, 1)
-    prediction = model.predict(image_array)
-    index = np.argmax(prediction)
+MNIST_PATH = "mnist_model.h5"
+_mnist_model = None
 
-    return str(index)
+def ensure_mnist():
+    global _mnist_model
+    if _mnist_model is None:
+        if not os.path.exists(MNIST_PATH):
+            raise RuntimeError("MNIST модель не найдена: mnist_model.h5")
+        _mnist_model = load_model(MNIST_PATH, compile=False)
+    return _mnist_model
+
+def number_identification(photo):
+    try:
+        model = ensure_mnist()
+        image = Image.open(photo).convert("L")
+        image = ImageOps.invert(image)
+        image = ImageOps.fit(image, (28, 28), method=Image.Resampling.LANCZOS)
+        x = (np.asarray(image).astype(np.float32) / 255.0).reshape(1, 28, 28, 1)
+        pred = model.predict(x, verbose=0)
+        return str(int(np.argmax(pred)))
+    except Exception as e:
+        return f"Ошибка распознавания цифры: {e}"
 
 
 @bot.message_handler(commands=['start'])
@@ -198,8 +223,6 @@ def handle_photo(message):
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка обработки фото: {e}")
 
-user_messages = {}
-
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text(message):
     try:
@@ -231,36 +254,44 @@ def handle_text(message):
             send2 = bot.send_message(message.chat.id, "Загрузите изображение кошки или собаки")
             bot.register_next_step_handler(send2, ident_cat_dog)
         else:
+            msg = bot.send_message(message.chat.id, "Думаю над ответом…")
+            try:
+                answer = chat(message.chat.id, message.text)
+                send_long_message(message.chat.id, answer, parse_mode="MarkdownV2")
+            finally:
+                try:
+                    bot.delete_message(message.chat.id, msg.message_id)
+                except Exception:
+                    pass
+
             bot.send_message(message.chat.id, "Думаю над ответом...")
             answer = chat(message.chat.id, message.text)
             send_long_message(message.chat.id, answer, parse_mode="MarkdownV2")
-            #bot.send_message(message.chat.id, answer, parse_mode='Markdown')
             bot.delete_message(message.chat.id, message.id+1)
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка: {e}")
 
-
-# ВЫПОЛНЯЕТСЯ, КОГДА ПОЛЬЗОВАТЕЛЬ НАЖИМАЕТ НА ОДНУ ИЗ КНОПОК КЛАВИАТУРЫ InlineKeyboard
 @bot.callback_query_handler(func=lambda call: call.data in ('1', '2', '3', '4', '5', '6'))
 def answer(call):
-    value = bot.send_dice(call.message.chat.id, emoji='').dice.value
+    value = bot.send_dice(call.message.chat.id, emoji='🎲').dice.value
     if str(value) == call.data:
         bot.send_message(call.message.chat.id, "Победа!")
     else:
         bot.send_message(call.message.chat.id, "Попробуй еще раз")
 
-
-
 if __name__ == "__main__":
-    SERVER_URL = os.getenv("RENDER_EXTERNAL_URL")
-    if SERVER_URL:
-        webhook_url = f"{SERVER_URL.rstrip('/')}/{TOKEN}"
+    server_url = os.getenv("RENDER_EXTERNAL_URL")
+    if server_url and TOKEN:
+        webhook_url = f"{server_url.rstrip('/')}/{TOKEN}"
         try:
-            r = requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}", timeout=10)
+            r = requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook",
+                             params={"url": webhook_url}, timeout=10)
             logging.info("Webhook установлен: %s", r.text)
-        except Exception as e:
-            logging.error("Ошибка при установке webhook", exc_info=e)
-        app.run(host='0.0.0.0', port=int(os.getenv("PORT", 10000)))
+        except Exception:
+            logging.exception("Ошибка при установке webhook")
+        port = int(os.environ.get("PORT", 10000))
+        logging.info("Starting server on port %s", port)
+        app.run(host='0.0.0.0', port=port)
     else:
         logging.info("Запуск бота в режиме polling")
         bot.remove_webhook()
