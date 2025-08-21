@@ -208,7 +208,7 @@ def handle_text(message):
             user_messages[user_id] = []
 
         user_messages[user_id].append(text)
-        print(f"Новое сообщение от {user_id}: {text})
+        print(f"Новое сообщение от {user_id}: {text}")
         if text == "Игра в кубик":
             keyboard2 = telebot.types.InlineKeyboardMarkup(row_width=3)
             button1 = telebot.types.InlineKeyboardButton("1", callback_data='1')
