@@ -119,28 +119,38 @@ def chat(user_id, text):
     except Exception as e:
         return f"Ошибка при запросе: {e}"
 
-MODEL_PATH = "cat_dog_model.h5"
-MODEL_URL = os.getenv("CAT_DOGS_MODEL_URL")
-_catdog_model = None
+TFLITE_PATH = "cat_dog_model.tflite"
+TFLITE_URL = os.getenv("CAT_DOGS_TFLITE_URL")
+_interpreter = None
+_input_details = None
+_output_details = None
 
-def ensure_catdog_model():
-    global _catdog_model
-    if _catdog_model is None:
-        if not os.path.exists(MODEL_PATH):
-            if not MODEL_URL:
-                raise RuntimeError("CAT_DOGS_MODEL_URL не задан, а локальной модели нет")
-            gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
-        _catdog_model = load_model(MODEL_PATH, compile=False)
-    return _catdog_model
+def ensure_catdog_tflite():
+    global _interpreter, _input_details, _output_details
+    if _interpreter is None:
+        if not os.path.exists(TFLITE_PATH):
+            if not TFLITE_URL:
+                raise RuntimeError("CAT_DOGS_TFLITE_URL не задан, а локальной модели нет")
+            gdown.download(TFLITE_URL, TFLITE_PATH, quiet=False)
 
+        _interpreter = tf.lite.Interpreter(model_path=TFLITE_PATH)
+        _interpreter.allocate_tensors()
+        _input_details = _interpreter.get_input_details()
+        _output_details = _interpreter.get_output_details()
+    return _interpreter, _input_details, _output_details
+    
 def cat_dog(photo):
     try:
-        model = ensure_catdog_model()
+        interpreter, input_details, output_details = ensure_catdog_tflite()
+
         image = Image.open(photo).convert("RGB")
         image = ImageOps.fit(image, (150, 150), method=Image.Resampling.LANCZOS)
         x = (np.asarray(image).astype(np.float32) / 255.0)[None, ...]
-        pred = model.predict(x, verbose=0)
-        
+
+        interpreter.set_tensor(input_details[0]['index'], x)
+        interpreter.invoke()
+        pred = interpreter.get_tensor(output_details[0]['index'])
+
         if pred.ndim == 2 and pred.shape[1] == 1:
             confidence = float(pred[0][0])
         elif pred.ndim == 1:
