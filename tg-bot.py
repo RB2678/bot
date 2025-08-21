@@ -152,13 +152,10 @@ def start(message):
         keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
         button1 = telebot.types.KeyboardButton(text="Игра в кубик")
         button2 = telebot.types.KeyboardButton(text="Игровой автомат")
-        button3 = telebot.types.KeyboardButton(text="Шар предсказаний")
-        button4 = telebot.types.KeyboardButton(text="Поле чудес")
-        button5 = telebot.types.KeyboardButton(text="Кто хочет стать миллионером")
         button6 = telebot.types.KeyboardButton(text="Распознавание цифр")
         button7 = telebot.types.KeyboardButton(text="Распознавание животных")
         keyboard.add(button6, button7)
-        bot.send_message(message.chat.id, "Привет, я бот с интегрированными нейросетевыми моделями. В мой функционал входят: общение с моделью DeepSeek-R1, а также распознование рукописных цифр и кошек/собак на изображениях при помощи нейросети", reply_markup=keyboard)
+        bot.send_message(message.chat.id, "Привет, я бот с интегрированной моделью DeepSeek! Задай мне вопрос", reply_markup=keyboard)
     except Exception as e:
         bot.reply_to(message, f"Ошибка: {e}")
 
