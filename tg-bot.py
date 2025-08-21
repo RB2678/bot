@@ -204,19 +204,7 @@ def handle_text(message):
             elif value == 64:
                 bot.send_message(message.chat.id, "Jackpot!")
             else:
-                bot.send_message(message.chat.id, "Попробуй еще раз")
-        elif text == "Шар предсказаний":
-            send = bot.send_message(message.chat.id, "Привет! Я магический шар предсказаний. Задай мне вопрос")
-            bot.register_next_step_handler(send, ballAnswer)
-        elif text == "Поле чудес":
-            global word
-            words = ["арбуз", "яблоко", "банан", "ананас", "вишня"]
-            word = random.choice(words)
-            file = open("Field.jpeg", 'rb')
-            bot.send_photo(message.chat.id, file, caption="Привет! Ты попал в игру \"Поле чудес\". Правила: ...")
-            send = bot.send_message(message.chat.id, "Какую букву хочешь открыть первой?")
-            file.close()
-            bot.register_next_step_handler(send, field)
+                bot.send_message(message.chat.id, "Попробуй еще раз")       
         elif text == "Распознавание цифр":
             send1 = bot.send_message(message.chat.id, "Загрузите изображение цифры")
             bot.register_next_step_handler(send1, ident_number)
@@ -230,49 +218,6 @@ def handle_text(message):
             bot.delete_message(message.chat.id, message.id+1)
     except Exception as e:
         bot.send_message(message.chat.id, f"Ошибка: {e}")
-
-
-def field(message):
-    global attempts
-    text = message.text
-    if attempts < 5:
-        if text in word:
-            bot.send_message(message.chat.id, "Буква есть в слове")
-        else:
-            bot.send_message(message.chat.id, "Буквы нет в слове")
-        attempts += 1
-        send = bot.send_message(message.chat.id, "Какую букву хочешь открыть?")
-        bot.register_next_step_handler(send, field)
-    else:
-        send = bot.send_message(message.chat.id, "Назови итоговое слово")
-        bot.register_next_step_handler(send, field2)
-        attempts = 0
-
-
-def field2(message):
-    text = message.text
-    if word == text:
-        bot.send_message(message.chat.id, "Победа!")
-    else:
-        bot.send_message(message.chat.id, "Попробуй еще раз")
-
-
-def ball_answer(message):
-    text = message.text
-    answers_list = ["Да", "Нет", "Неизвестно", "Скорее да, чем нет", "Скорее нет, чем да"]
-    answers_list = random.choice(answers_list)
-    if text[-1] == '?':
-        bot.send_message(message.chat.id, "Думаю над ответом...")
-        time.sleep(3)
-        bot.send_message(message.chat.id, "Заглядываю в будущее")
-        bot.delete_message(message.chat.id, message.id+1)
-        time.sleep(3)
-        bot.send_message(message.chat.id, "Твой ответ: " + answers_list)
-        bot.delete_message(message.chat.id, message.id+2)
-    else:
-        bot.send_message(message.chat.id, "Твое сообщение не является вопросом. Попробуй еще раз")
-        send = bot.send_message(message.chat.id, "Задай мне вопрос")
-        bot.register_next_step_handler(send, ballAnswer)
 
 
 # ВЫПОЛНЯЕТСЯ, КОГДА ПОЛЬЗОВАТЕЛЬ НАЖИМАЕТ НА ОДНУ ИЗ КНОПОК КЛАВИАТУРЫ InlineKeyboard
