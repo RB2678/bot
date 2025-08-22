@@ -40,21 +40,17 @@ MAX_LEN = 4096
 
 # format_with_html
 def escape_markdown(text: str) -> str:
-    """
-    Форматирует текст с помощью HTML тегов вместо Markdown
-    """
-    # Заменяем Markdown на HTML теги
+    logging.info(f"Текст до: {text}")
     text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
     text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
     text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)
     text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)
     text = re.sub(r'(.*?)`', r'<code>\1</code>', text)
     
-    # Экранируем HTML специальные символы
     text = text.replace('&', '&amp;')
     text = text.replace('<', '&lt;')
     text = text.replace('>', '&gt;')
-    
+    logging.info(f"Текст после: {text}")
     return text
     
 def send_long_message(chat_id, text, parse_mode='HTML'):
@@ -62,6 +58,7 @@ def send_long_message(chat_id, text, parse_mode='HTML'):
         safe_text = text or ""
         #safe_text = escape_markdown(text or "")
         for i in range(0, len(safe_text), MAX_LEN):
+            
             bot.send_message(chat_id, safe_text[i:i+MAX_LEN], parse_mode=parse_mode)
     except Exception as e:
         logging.error(f"Ошибка: {e}")
