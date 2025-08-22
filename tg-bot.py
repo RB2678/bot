@@ -13,6 +13,7 @@ from PIL import Image, ImageOps
 import telebot
 from tensorflow.keras.models import load_model
 import tensorflow as tf
+from telebot import util
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,34 +26,20 @@ app = Flask(__name__)
 
 MAX_LEN = 4096
 
-# def escape_markdown(text: str) -> str:
-#     escape_chars = r'\#[]()~>+-=|{}.!'
-#     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
-
-
 def convert_markdown_to_html(text: str) -> str:
     text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)   # жирный
     text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)       # курсив
     text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)       # подчёркнутый
     text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)       # зачёркнутый
     text = re.sub(r'([^]*)', r'<code>\1</code>', text) # код
-    return text
-    
-# format_with_html
-def escape_markdown(text: str) -> str:
-    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
-    text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
-    text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)
-    text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)
-    text = re.sub(r'`(.*?)`', r'<code>\1</code>', text)
+    #text = re.sub(r'`(.*?)`', r'<code>\1</code>', text)
     return text
     
 def send_long_message(chat_id, text, parse_mode='HTML'):
     try:
-        safe_text = escape_markdown(text or "")
-        for i in range(0, len(safe_text), MAX_LEN):
-            
-            bot.send_message(chat_id, safe_text[i:i+MAX_LEN], parse_mode=parse_mode)
+        safe_text = convert_markdown_to_html(text or "")
+        for part in util.smart_split(safe_text, MAX_LEN):
+            bot.send_message(chat_id, part, parse_mode=parse_mode)
     except Exception as e:
         logging.error(f"Ошибка: {e}")
 
@@ -292,7 +279,7 @@ def handle_text(message):
             msg = bot.send_message(message.chat.id, "Думаю над ответом…")
             try:
                 answer = chat(message.chat.id, message.text)
-                send_long_message(message.chat.id, answer, parse_mode="HTML")
+                send_long_message(message.chat.id, answer)
             finally:
                 try:
                     bot.delete_message(message.chat.id, msg.message_id)
