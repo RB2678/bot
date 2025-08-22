@@ -42,7 +42,7 @@ def escape_markdown(text: str) -> str:
 #     # text = text.replace('>', '&gt;')
     return text
     
-def send_long_message(chat_id, text, parse_mode='MarkdownV2'):
+def send_long_message(chat_id, text, parse_mode='HTML'):
     try:
         safe_text = escape_markdown(text or "")
         for i in range(0, len(safe_text), MAX_LEN):
