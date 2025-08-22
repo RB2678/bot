@@ -44,7 +44,7 @@ def escape_markdown(text: str) -> str:
     text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
     text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)
     text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)
-    text = re.sub(r'(.*?)`', r'<code>\1</code>', text)
+    text = re.sub(r'`(.*?)`', r'<code>\1</code>', text)
     return text
     
 def send_long_message(chat_id, text, parse_mode='HTML'):
@@ -292,7 +292,7 @@ def handle_text(message):
             msg = bot.send_message(message.chat.id, "Думаю над ответом…")
             try:
                 answer = chat(message.chat.id, message.text)
-                send_long_message(message.chat.id, answer, parse_mode="MarkdownV2")
+                send_long_message(message.chat.id, answer, parse_mode="HTML")
             finally:
                 try:
                     bot.delete_message(message.chat.id, msg.message_id)
