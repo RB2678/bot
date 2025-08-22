@@ -29,15 +29,33 @@ MAX_LEN = 4096
 #     escape_chars = r'[\\`~<>#+=|\{\}\.!-]'
 #     return re.sub(f'({escape_chars})', r'\\\1', text)
 
-def escape_markdown(text: str) -> str:
-    """
-    Экранирует только символы, которые ломают MarkdownV2,
-    оставляя символы разметки, чтобы они применялись.
-    """
-    # Символы, которые обязательно нужно экранировать в Telegram MarkdownV2
-    escape_chars = r'[_*\[\]()~`>#+\-=|{}.!]'
-    return re.sub(f'([{escape_chars}])', r'\\\1', text)
+# def escape_markdown(text: str) -> str:
+#     """
+#     Экранирует только символы, которые ломают MarkdownV2,
+#     оставляя символы разметки, чтобы они применялись.
+#     """
+#     # Символы, которые обязательно нужно экранировать в Telegram MarkdownV2
+#     escape_chars = r'[_*\[\]()~`>#+\-=|{}.!]'
+#     return re.sub(f'([{escape_chars}])', r'\\\1', text)
 
+def format_with_html(text: str) -> str:
+    """
+    Форматирует текст с помощью HTML тегов вместо Markdown
+    """
+    # Заменяем Markdown на HTML теги
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+    text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
+    text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)
+    text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)
+    text = re.sub(r'(.*?)`', r'<code>\1</code>', text)
+    
+    # Экранируем HTML специальные символы
+    text = text.replace('&', '&amp;')
+    text = text.replace('<', '&lt;')
+    text = text.replace('>', '&gt;')
+    
+    return text
+    
 def send_long_message(chat_id, text, parse_mode="MarkdownV2"):
     try:
         safe_text = text or ""
