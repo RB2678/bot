@@ -38,7 +38,8 @@ MAX_LEN = 4096
 #     escape_chars = r'[_*\[\]()~`>#+\-=|{}.!]'
 #     return re.sub(f'([{escape_chars}])', r'\\\1', text)
 
-def format_with_html(text: str) -> str:
+# format_with_html
+def escape_markdown(text: str) -> str:
     """
     Форматирует текст с помощью HTML тегов вместо Markdown
     """
