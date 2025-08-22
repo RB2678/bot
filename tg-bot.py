@@ -20,7 +20,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 if not TOKEN:
     sys.exit("Ошибка: BOT_TOKEN не задан в переменных окружения")
 
-bot = telebot.TeleBot(TOKEN, parse_mode="MarkdownV2")
+bot = telebot.TeleBot(TOKEN, parse_mode=None)
 app = Flask(__name__)
 
 MAX_LEN = 4096
