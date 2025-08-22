@@ -36,7 +36,7 @@ def escape_markdown(text: str) -> str:
     text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)
     text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)
     text = re.sub(r'(.*?)`', r'<code>\1</code>', text)
-    escape_chars = r'\#[]()~+-=|{}.!'
+    escape_chars = r'\#[]()~+->=|{}.!'
     text = re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
     # text = text.replace('&', '&amp;')
     # text = text.replace('<', '&lt;')
