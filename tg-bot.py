@@ -25,32 +25,27 @@ app = Flask(__name__)
 
 MAX_LEN = 4096
 
-# def escape_markdown(text: str) -> str:
-#     escape_chars = r'[\\`~<>#+=|\{\}\.!-]'
-#     return re.sub(f'({escape_chars})', r'\\\1', text)
-
 def escape_markdown(text: str) -> str:
-    escape_chars = r'\_[]()~`>+-=|{}.!'
+    escape_chars = r'\_*[]()~`>+-=|{}.!'
     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
 
-# format_with_html
+# # format_with_html
 # def escape_markdown(text: str) -> str:
-#     logging.info(f"Текст до: {text}")
+#     # logging.info(f"Текст до: {text}")
 #     text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
 #     text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
 #     text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)
 #     text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)
 #     text = re.sub(r'(.*?)`', r'<code>\1</code>', text)
     
-#     text = text.replace('&', '&amp;')
-#     text = text.replace('<', '&lt;')
-#     text = text.replace('>', '&gt;')
-#     logging.info(f"Текст после: {text}")
+#     # text = text.replace('&', '&amp;')
+#     # text = text.replace('<', '&lt;')
+#     # text = text.replace('>', '&gt;')
+#     # logging.info(f"Текст после: {text}")
 #     return text
     
-def send_long_message(chat_id, text, parse_mode='HTML'):
+def send_long_message(chat_id, text, parse_mode='MarkdownV2'):
     try:
-        #safe_text = text or ""
         safe_text = escape_markdown(text or "")
         for i in range(0, len(safe_text), MAX_LEN):
             
