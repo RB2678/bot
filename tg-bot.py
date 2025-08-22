@@ -37,9 +37,9 @@ def escape_markdown(text: str) -> str:
     text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)
     text = re.sub(r'(.*?)`', r'<code>\1</code>', text)
     
-#     # text = text.replace('&', '&amp;')
-#     # text = text.replace('<', '&lt;')
-#     # text = text.replace('>', '&gt;')
+    text = text.replace('&', '&amp;')
+    text = text.replace('<', '&lt;')
+    text = text.replace('>', '&gt;')
     return text
     
 def send_long_message(chat_id, text, parse_mode='HTML'):
