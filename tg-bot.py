@@ -248,7 +248,6 @@ def handle_photo(message):
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_text(message):
     try:
-        #logging.info(f"Сообщение от {message.from_user.id}: {message.text}")
         text = message.text
 
         if text == "Игра в кубик":
