@@ -29,6 +29,15 @@ MAX_LEN = 4096
 #     escape_chars = r'\#[]()~>+-=|{}.!'
 #     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
 
+
+def convert_markdown_to_html(text: str) -> str:
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)   # жирный
+    text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)       # курсив
+    text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)       # подчёркнутый
+    text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)       # зачёркнутый
+    text = re.sub(r'([^]*)', r'<code>\1</code>', text) # код
+    return text
+    
 # format_with_html
 def escape_markdown(text: str) -> str:
     text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
@@ -36,11 +45,6 @@ def escape_markdown(text: str) -> str:
     text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)
     text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)
     text = re.sub(r'(.*?)`', r'<code>\1</code>', text)
-    escape_chars = r'\#[]()~+->=|{}.!'
-    text = re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
-    # text = text.replace('&', '&amp;')
-    # text = text.replace('<', '&lt;')
-    # text = text.replace('>', '&gt;')
     return text
     
 def send_long_message(chat_id, text, parse_mode='HTML'):
