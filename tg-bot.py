@@ -31,7 +31,7 @@ def convert_markdown_to_html(text: str) -> str:
     text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)       # курсив
     text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)       # подчёркнутый
     text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)       # зачёркнутый
-    text = re.sub(r'([^]*)', r'<code>\1</code>', text) # код
+    text = re.sub(r'`([^]*)`', r'<code>\1</code>', text) # код
     #text = re.sub(r'`(.*?)`', r'<code>\1</code>', text)
     return text
     
