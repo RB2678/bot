@@ -55,8 +55,8 @@ def escape_markdown(text: str) -> str:
     
 def send_long_message(chat_id, text, parse_mode='HTML'):
     try:
-        safe_text = text or ""
-        #safe_text = escape_markdown(text or "")
+        #safe_text = text or ""
+        safe_text = escape_markdown(text or "")
         for i in range(0, len(safe_text), MAX_LEN):
             
             bot.send_message(chat_id, safe_text[i:i+MAX_LEN], parse_mode=parse_mode)
