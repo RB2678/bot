@@ -25,9 +25,18 @@ app = Flask(__name__)
 
 MAX_LEN = 4096
 
+# def escape_markdown(text: str) -> str:
+#     escape_chars = r'[\\`~<>#+=|\{\}\.!-]'
+#     return re.sub(f'({escape_chars})', r'\\\1', text)
+
 def escape_markdown(text: str) -> str:
-    escape_chars = r'[\\`~<>#+=|\{\}\.!-]'
-    return re.sub(f'({escape_chars})', r'\\\1', text)
+    """
+    Экранирует только символы, которые ломают MarkdownV2,
+    оставляя символы разметки, чтобы они применялись.
+    """
+    # Символы, которые обязательно нужно экранировать в Telegram MarkdownV2
+    escape_chars = r'[_*\[\]()~`>#+\-=|{}.!]'
+    return re.sub(f'([{escape_chars}])', r'\\\1', text)
 
 def send_long_message(chat_id, text, parse_mode="MarkdownV2"):
     try:
