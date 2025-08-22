@@ -26,7 +26,7 @@ app = Flask(__name__)
 MAX_LEN = 4096
 
 def escape_markdown(text: str) -> str:
-    escape_chars = r'\_[]()~`>+-=|{}.!'
+    escape_chars = r'\[]()~>+-=|{}.!'
     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
 
 # # format_with_html
@@ -119,7 +119,7 @@ def chat(user_id, text):
             "messages": history[str(user_id)]
         }
 
-        response = requests.post(url, headers=headers, json=data, timeout=60)
+        response = requests.post(url, headers=headers, json=data, timeout=300)
         data = response.json()
 
         if isinstance(data, dict) and data.get('choices'):
@@ -136,8 +136,10 @@ def chat(user_id, text):
             return content
         else:
             logging.error(f"Ошибка API: {json.dumps(data, ensure_ascii=False)}")
+            bot.send_long_message(f"Ошибка при запросе: {e}, повторите попытку позже")
     except Exception as e:
         logging.error(f"Ошибка при запросе: {e}")
+        bot.send_long_message(f"Ошибка при запросе: {e}, повторите попытку позже")
 
 TFLITE_PATH = "cat_dog_model.tflite"
 TFLITE_URL = os.getenv("CAT_DOGS_TFLITE_URL")
