@@ -27,12 +27,12 @@ app = Flask(__name__)
 MAX_LEN = 4096
 
 def convert_markdown_to_html(text: str) -> str:
-    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)   # жирный
-    text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)       # курсив
-    text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)       # подчёркнутый
-    text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)       # зачёркнутый
-    text = re.sub(r'`([^]*)`', r'<code>\1</code>', text) # код
-    #text = re.sub(r'`(.*?)`', r'<code>\1</code>', text)
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)   
+    text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)       
+    text = re.sub(r'__(.*?)__', r'<u>\1</u>', text)       
+    text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text)       
+    text = re.sub(r'`([^`]*)`', r'<code>\1</code>', text) 
+    text = re.sub(r'\[(.*?)\]\((.*?)\)', r'<a href="\2">\1</a>', text)
     return text
     
 def send_long_message(chat_id, text, parse_mode='HTML'):
